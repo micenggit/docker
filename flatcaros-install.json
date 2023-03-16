@@ -1,0 +1,90 @@
+{
+  "ignition": {
+    "version": "2.1.0",
+    "config": {}
+  },
+  "networkd": {
+      "units": [
+        {
+          "name": "00-eth0.network",
+          "contents": "[Match]\nName=eno3\n\n[Network]\nDNS=8.8.8.8\nAddress=192.168.122.222/24\nGateway=192.168.122.1"
+        }
+      ]
+    },
+  "storage": {
+  "filesystems": [
+     {
+       "name": "docker",
+       "mount": {
+         "device": "/dev/sdb",
+         "format": "ext4",
+         "wipeFilesystem": true,
+         "label": "docker"
+         }
+     },
+     {
+       "name": "srv",
+       "mount": {
+         "device": "/dev/sdc",
+         "format": "ext4",
+         "wipeFilesystem": true,
+         "label": "srv"
+         }
+     }
+    ]
+  },
+  "systemd": {
+  "units": [
+    {
+      "mask": true,
+      "name": "update-engine.service"
+    },
+    {
+      "mask": true,
+      "name": "locksmithd.service"
+    },
+    {
+      "enable": true,
+      "name": "docker.service"
+    },
+    {
+      "contents": "[Unit]\nDescription=Set the time zone\n\n[Service]\nExecStart=/usr/bin/timedatectl set-timezone Europe/Warsaw\nRemainAfterExit=yes\nType=oneshot\n\n[Install]\nWantedBy=multi-user.target",
+      "enable": true,
+      "name": "settimezone.service"
+    },
+    {
+      "contents": "[[Unit]\nDescription=Mount docker to /var/lib/docker\n[Mount]\nWhat=/dev/disk/by-label/docker\nWhere=/var/lib/docker\nType=ext4\n[Install]\nWantedBy=multi-user.target",
+      "enable": true,
+      "name": "var-lib-docker.mount"
+    },
+    {
+      "contents": "[[Unit]\nDescription=Mount srv to /srv\n[Mount]\nWhat=/dev/disk/by-label/srv\nWhere=/srv\nType=ext4\n[Install]\nWantedBy=multi-user.target",
+      "enable": true,
+      "name": "srv.mount"
+    },
+    {
+      "dropins": [
+        {
+          "contents": "[Unit]\nAfter=var-lib-docker.mount\nAfter=srv.mount\nRequires=var-lib-docker.mount\nRequires=srv.mount",
+          "name": "10-wait-docker.conf"
+        }
+      ],
+      "name": "docker.service"
+    }
+    ]
+  },
+  "passwd": {
+    "users": [
+      {
+        "groups": [
+          "sudo"
+        ],
+        "name": "core",
+        "sshAuthorizedKeys": [
+	"YOUR_SSH_KEY"
+	]
+      }
+    ]
+  }
+}
+
